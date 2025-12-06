@@ -14,6 +14,13 @@ docker ps
 enter into hdfs:
 docker exec -it hdfs-namenode bash
 
+enter into spark:
+docker exec -it spark-master spark-shell
+
+enter into pyspark:
+docker exec -it jupyter-notebook pyspark
+docker exec -it spark-master pyspark
+
 //---------------------------
 hdfs
 //---------------------------
@@ -27,3 +34,13 @@ hdfs dfs -mkdir -p /input
 dump file from local to hdfs:
 hdfs dfs -put test.txt /input
 
+
+//---------------------------
+bash
+//---------------------------
+
+top 10 rows of the files with the mask part*:
+head -10 part*
+
+bottom 10 rows of the files with the mask part*:
+tail -10 part*

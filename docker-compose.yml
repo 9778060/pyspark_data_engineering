@@ -85,7 +85,8 @@ services:
       - "8888:8888"
       - "4055:4040"
     volumes:
-      - ./notebooks:/home/jovyan/work
+      - ./notebooks:/home/jovyan/notebooks
+      - ./my_notebooks:/home/jovyan/my_notebooks
       - ./spark-apps:/opt/spark-apps
       - ./spark-events:/tmp/spark-events
     depends_on:

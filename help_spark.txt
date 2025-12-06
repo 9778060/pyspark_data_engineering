@@ -1,0 +1,19 @@
+//---------------------------
+spark
+//---------------------------
+
+read csv into df:
+df = spark.read.csv("/opt/spark-apps/input/customers.csv", header=True)
+df = spark.read.option("header", True).csv("/opt/spark-apps/input/customers.csv")
+
+read json into df:
+df = spark.read.json("/opt/spark-apps/input/orders.json")
+
+show df:
+df.show()
+df.show(5, False)
+
+print schema:
+df.printSchema()
+
+
