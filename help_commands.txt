@@ -1,0 +1,29 @@
+//---------------------------
+docker
+//---------------------------
+
+start container:
+docker compose up
+
+stop container:
+docker compose down
+
+list active components in docker:
+docker ps
+
+enter into hdfs:
+docker exec -it hdfs-namenode bash
+
+//---------------------------
+hdfs
+//---------------------------
+
+list:
+hdfs dfs -ls /
+
+create folder:
+hdfs dfs -mkdir -p /input
+
+dump file from local to hdfs:
+hdfs dfs -put test.txt /input
+
