@@ -17,9 +17,13 @@ docker exec -it hdfs-namenode bash
 enter into spark:
 docker exec -it spark-master spark-shell
 
-enter into pyspark:
+enter into spark pyspark:
 docker exec -it jupyter-notebook pyspark
 docker exec -it spark-master pyspark
+
+enter into spark bash:
+docker exec -it jupyter-notebook bash
+docker exec -it spark-master bash
 
 //---------------------------
 hdfs
@@ -44,3 +48,14 @@ head -10 part*
 
 bottom 10 rows of the files with the mask part*:
 tail -10 part*
+
+//---------------------------
+jupyter
+//---------------------------
+jupyter nbconvert --to script test.ipynb
+
+
+//---------------------------
+spark bash
+//---------------------------
+spark-submit test.py
