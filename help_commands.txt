@@ -38,6 +38,12 @@ hdfs dfs -mkdir -p /input
 dump file from local to hdfs:
 hdfs dfs -put test.txt /input
 
+change access rights to be able to write into the folder by anyone:
+hdfs dfs -chmod -R 777 /sales_etl
+
+read the file:
+hdfs dfs -cat /sales_etl/output/final_csv/part* | head -10
+
 
 //---------------------------
 bash
@@ -59,3 +65,15 @@ jupyter nbconvert --to script test.ipynb
 spark bash
 //---------------------------
 spark-submit test.py
+
+
+//---------------------------
+bash cron
+//---------------------------
+mkdir -p logs
+chmod 777 logs
+
+crontab -e
+
+to run every minute(this is working for cron)
+* * * * * /usr/bin/bash -lc 'cd /home/emwreview9/pyspark_data_engineering && /home/emwreview9/pyspark_data_engineering/spark-apps/cron/my_run_sales.sh' >> /home/emwreview9/pyspark_data_engineering/spark-apps/my_logs/my_sales_etl.log 2>&1
