@@ -1,15 +1,28 @@
 from pyspark.sql import SparkSession
 import sys
-import datetime
+import os
 
 
-def main(run_date):
+def main(env, run_date, hdfs_input, hdfs_output):
+    print(f"[INFO] env = {env}")
+    print(f"[INFO] run_date = {run_date}")
+    print(f"[INFO] hdfs_input = {hdfs_input}")
+    print(f"[INFO] hdfs_output = {hdfs_output}")
 
-    spark = SparkSession.builder.appName("CustomerLoyaltyETL").master("spark://spark-master:7077").getOrCreate()
+    spark = SparkSession.builder \
+        .appName("CustomerLoyaltyETL") \
+        .master("spark://spark-master:7077") \
+        .getOrCreate()
 
-    df_orders = spark.read.option("header", True).csv("hdfs://hdfs-namenode:9000/customer_etl/input/orders.csv")
-    df_products = spark.read.json("hdfs://hdfs-namenode:9000/customer_etl/input/products.json")
-    df_customers = spark.read.option("header", True).csv("hdfs://hdfs-namenode:9000/customer_etl/input/customers.csv")
+    df_orders = spark.read.option("header", True).csv(
+        f"hdfs://hdfs-namenode:9000{hdfs_input}/orders.csv"
+    )
+    df_products = spark.read.json(
+        f"hdfs://hdfs-namenode:9000{hdfs_input}/products.json"
+    )
+    df_customers = spark.read.option("header", True).csv(
+        f"hdfs://hdfs-namenode:9000{hdfs_input}/customers.csv"
+    )
 
     df_orders.createOrReplaceTempView("orders")
     df_products.createOrReplaceTempView("products")
@@ -58,7 +71,7 @@ def main(run_date):
             m.days_active,
             m.categories_bought,
             CASE
-                WHEN m.total_orders >= 3 AND m.days_active >= 2 AND m.categories_bought >= 2 THEN 'Loyal'
+                WHEN m.total_orders >= 3 AND m.days_active >= 2 AND m.categories_bought >= 2 THEN 'Premium'
                 WHEN m.total_orders >= 2 AND (m.days_active >= 2 OR m.categories_bought >= 2) THEN 'Engaged'
                 ELSE 'Casual'
             END AS loyalty_status
@@ -67,14 +80,46 @@ def main(run_date):
     """)
 
     df_loyalty = spark.sql("SELECT * FROM customer_loyalty")
-    df_loyalty.write.mode("overwrite").option("header", True).csv(f"hdfs://hdfs-namenode:9000/customer_etl/output/loyalty_snapshot/{run_date}")
+
+    df_loyalty.write.mode("overwrite").option("header", True).csv(
+        f"hdfs://hdfs-namenode:9000{hdfs_output}"
+    )
 
     spark.stop()
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: customer_etl_job.py %Y-%m-%d")
+    # NOTE:
+    # This script supports two ways of being called:
+    # 1)
+    #       spark-submit customer_etl_job.py <run_date>
+    # 2)
+    #       spark-submit customer_etl_job.py <env> <run_date> <hdfs_input> <hdfs_output>
+    #
+    # The argument handling below makes it compatible with both styles.
+
+    # customer_etl_job.py <run_date>
+    if len(sys.argv) == 2:
+        run_date = sys.argv[1]
+        env = "dev"
+
+        hdfs_input = "/customer_etl/input"
+        hdfs_output = f"/customer_etl/output/loyalty_snapshot_{run_date}"
+
+    # customer_etl_job.py <env> <run_date> <hdfs_input> <hdfs_output>
+    elif len(sys.argv) == 5:
+        env = sys.argv[1]
+        run_date = sys.argv[2]
+        hdfs_input = sys.argv[3]
+        hdfs_output = sys.argv[4]
+
+    else:
+        print(
+            "Usage:\n"
+            "  spark-submit customer_etl_job.py <run_date>\n"
+            "  (OR)\n"
+            "  spark-submit customer_etl_job.py <env> <run_date> <hdfs_input> <hdfs_output>"
+        )
         sys.exit(1)
-    run_date = datetime.datetime.strptime(sys.argv[1], "%Y-%m-%d").date()
-    main(run_date)
+
+    main(env, run_date, hdfs_input, hdfs_output)
