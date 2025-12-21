@@ -1,4 +1,5 @@
 from pyspark.sql import SparkSession
+import sys
 import datetime
 
 
@@ -66,10 +67,14 @@ def main(run_date):
     """)
 
     df_loyalty = spark.sql("SELECT * FROM customer_loyalty")
-    df_loyalty.write.mode("overwrite").option("header", True).csv("hdfs://hdfs-namenode:9000/customer_etl/output/loyalty_snapshot")
+    df_loyalty.write.mode("overwrite").option("header", True).csv(f"hdfs://hdfs-namenode:9000/customer_etl/output/loyalty_snapshot/{run_date}")
 
     spark.stop()
 
 
 if __name__ == "__main__":
-    main(datetime.datetime.now().date())
+    if len(sys.argv) < 2:
+        print("Usage: customer_etl_job.py %Y-%m-%d")
+        sys.exit(1)
+    run_date = datetime.datetime.strptime(sys.argv[1], "%Y-%m-%d").date()
+    main(run_date)
