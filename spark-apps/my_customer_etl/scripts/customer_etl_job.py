@@ -81,8 +81,6 @@ def main(env, run_date, hdfs_input, hdfs_output):
 
     df_loyalty = spark.sql("SELECT * FROM customer_loyalty")
 
-    print("TEST")
-
     df_loyalty.write.mode("overwrite").option("header", True).csv(
         f"hdfs://hdfs-namenode:9000{hdfs_output}"
     )
@@ -99,6 +97,10 @@ if __name__ == "__main__":
     #       spark-submit customer_etl_job.py <env> <run_date> <hdfs_input> <hdfs_output>
     #
     # The argument handling below makes it compatible with both styles.
+
+    print("-" * 50)
+    print(sys.argv)
+    print("-" * 50)
 
     # customer_etl_job.py <run_date>
     if len(sys.argv) == 2:

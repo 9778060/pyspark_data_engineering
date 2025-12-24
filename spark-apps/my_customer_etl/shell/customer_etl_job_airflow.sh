@@ -7,17 +7,12 @@ if [ -z "$1" ]; then
 fi
 
 ENV=${1:-dev}
-echo $ENV
-echo $HDFS_INPUT
 
 # RUN_DATE="$1"
 # LANDING_PATH="/opt/spark-apps/landing/customer_etl/"
 # HDFS_INPUT="/customer_etl/input"
 # HDFS_OUTPUT="/customer_etl/output/loyalty_snapshot_${RUN_DATE}"
 # FINAL_CSV="/opt/spark-apps/shared_output/customer_etl/loyalty_snapshot_${RUN_DATE}.csv"
-
-echo " Running Customer ETL for: $RUN_DATE"
-echo " Final CSV will be stored at: $FINAL_CSV"
 
 # Step 2: Detect if running inside container
 if [ -f /.dockerenv ]; then
@@ -30,24 +25,48 @@ if [ -f /.dockerenv ]; then
 
   echo $env
   echo 'HDFS_INPUT' $HDFS_INPUT
+  echo " Running Customer ETL for: $RUN_DATE"
+  echo " Final CSV will be stored at: $FINAL_CSV"
 
   echo " Uploading to HDFS..."
+
+  if hdfs dfs -test -d "${HDFS_ROOT}"; then
+    echo "Directory exists: ${HDFS_ROOT}"
+  else
+    echo "Directory does not exist: ${HDFS_ROOT}"
+    hdfs dfs -mkdir -p ${HDFS_ROOT}
+    hdfs dfs -chmod -R 777 ${HDFS_ROOT}    
+  fi
+
   if hdfs dfs -test -d "${HDFS_INPUT}"; then
     hdfs dfs -rm -r "${HDFS_INPUT}"
   else
     echo "Directory does not exist: ${HDFS_INPUT}"
   fi  
   hdfs dfs -mkdir -p ${HDFS_INPUT}
+  hdfs dfs -chmod -R 777 ${HDFS_INPUT}
   
   hdfs dfs -put "${LANDING_PATH}/customers.csv" ${HDFS_INPUT}/
   hdfs dfs -put "${LANDING_PATH}/products.json" ${HDFS_INPUT}/
   hdfs dfs -put "${LANDING_PATH}/orders.csv" ${HDFS_INPUT}/
+
+  hdfs dfs -chmod -R 777 ${HDFS_INPUT}
+
+  if hdfs dfs -test -d "${HDFS_OUTPUT_ROOT}"; then
+    echo "Directory exists: ${HDFS_OUTPUT_ROOT}"
+  else
+    echo "Directory does not exist: ${HDFS_OUTPUT_ROOT}"
+    hdfs dfs -mkdir -p ${HDFS_OUTPUT_ROOT}
+    hdfs dfs -chmod -R 777 ${HDFS_OUTPUT_ROOT}    
+  fi  
 
   #echo "  Running Spark job..."
   
   #added newly args to spark script since all hardcoding has been removed in pyspark script as well(NEW) 
   spark-submit --master spark://spark-master:7077 /opt/spark-apps/my_customer_etl/scripts/customer_etl_job.py \
 	  $ENV "$RUN_DATE" "$HDFS_INPUT" "$HDFS_OUTPUT"
+
+  hdfs dfs -chmod -R 777 ${HDFS_OUTPUT}
 
   echo " Exporting merged CSV to local path..."
   # added newly since hdfs merge from inside container is not possible. hence generating in tmp location and copying
@@ -63,7 +82,20 @@ else
 
   echo " Uploading to HDFS via docker exec..."
   
-  source /mnt/c/pyspark_stack/spark-apps/my_customer_etl/config/env.sh "$ENV"
+  source ~/pyspark_data_engineering/spark-apps/my_customer_etl/config/env.sh "$ENV"
+
+  echo $env
+  echo 'HDFS_INPUT' $HDFS_INPUT
+  echo " Running Customer ETL for: $RUN_DATE"
+  echo " Final CSV will be stored at: $FINAL_CSV"  
+
+  if docker exec hdfs-namenode hdfs dfs -test -d "${HDFS_ROOT}"; then
+    echo "Directory exists: ${HDFS_ROOT}"
+  else
+    echo "Directory does not exist: ${HDFS_ROOT}"
+    docker exec hdfs-namenode hdfs dfs -mkdir -p ${HDFS_ROOT}
+    docker exec hdfs-namenode hdfs dfs -chmod -R 777 ${HDFS_ROOT}    
+  fi
 
   if docker exec hdfs-namenode hdfs dfs -test -d "${HDFS_INPUT}"; then
     docker exec hdfs-namenode hdfs dfs -rm -r "${HDFS_INPUT}"
@@ -71,10 +103,21 @@ else
     echo "Directory does not exist: ${HDFS_INPUT}"
   fi  
   docker exec hdfs-namenode hdfs dfs -mkdir -p ${HDFS_INPUT}
-  
+  docker exec hdfs-namenode hdfs dfs -chmod -R 777 ${HDFS_INPUT}
+
   docker exec hdfs-namenode hdfs dfs -put "${LANDING_PATH}/customers.csv" ${HDFS_INPUT}/
   docker exec hdfs-namenode hdfs dfs -put "${LANDING_PATH}/products.json" ${HDFS_INPUT}/
   docker exec hdfs-namenode hdfs dfs -put "${LANDING_PATH}/orders.csv" ${HDFS_INPUT}/
+
+  docker exec hdfs-namenode hdfs dfs -chmod -R 777 ${HDFS_INPUT}
+  
+  if docker exec hdfs-namenode hdfs dfs -test -d "${HDFS_OUTPUT_ROOT}"; then
+    echo "Directory exists: ${HDFS_OUTPUT_ROOT}"
+  else
+    echo "Directory does not exist: ${HDFS_OUTPUT_ROOT}"
+    docker exec hdfs-namenode hdfs dfs -mkdir -p ${HDFS_OUTPUT_ROOT}
+    docker exec hdfs-namenode hdfs dfs -chmod -R 777 ${HDFS_OUTPUT_ROOT}      
+  fi  
 
 
   echo " Submitting Spark job via docker exec..."
@@ -82,6 +125,8 @@ else
   #added newly args to spark script since all hardcoding has been removed in pyspark script as well(NEW)
   docker exec spark-master spark-submit /opt/spark-apps/my_customer_etl/scripts/customer_etl_job.py \
 	  $ENV "$RUN_DATE" "$HDFS_INPUT" "$HDFS_OUTPUT"
+
+  docker exec hdfs-namenode hdfs dfs -chmod -R 777 ${HDFS_OUTPUT}
 
   echo "Merging HDFS output to host shared folder..."
   #mkdir -p "/opt/spark-apps/shared_output/customer_etl/"
