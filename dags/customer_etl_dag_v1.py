@@ -19,7 +19,7 @@ with DAG(
 
     run_etl = BashOperator(
         task_id='run_customer_loyalty_etl',
-        bash_command='bash /opt/spark-apps/customer_etl/shell/customer_etl_job_airflow.sh {{ ds }}'
+        bash_command='bash /opt/spark-apps/my_customer_etl/shell/customer_etl_job_airflow.sh {{ ds }}'
     )
 
     run_etl
