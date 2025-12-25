@@ -120,8 +120,6 @@ Tips:
 * Make sure the DAG file ends with ``.py``.
 * Check Airflow logs if a DAG doesn’t show up or is failing to parse.
 
-Additional functionality/features:
-...
 
 Credits
 =======
