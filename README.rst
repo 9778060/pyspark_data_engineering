@@ -130,6 +130,7 @@ Authors
 ~~~~~~~
 
 * 9778060
+* Special credits and thanks to Chandra Venkat for his great PySpark course, tutorials and resources (https://www.udemy.com/user/chandra-venkat-4/)
 
 Maintainers
 ~~~~~~~~~~~
